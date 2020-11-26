@@ -1,6 +1,8 @@
 const properties = require('./json/properties.json');
 const users = require('./json/users.json');
-const { Pool } = require('pg');
+const {
+  Pool
+} = require('pg');
 
 const pool = new Pool({
   user: 'vagrant',
@@ -15,7 +17,7 @@ const pool = new Pool({
  * @param {String} email The email of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithEmail = function(email) {
+const getUserWithEmail = function (email) {
   // let user;
   // for (const userId in users) {
   //   user = users[userId];
@@ -33,13 +35,13 @@ const getUserWithEmail = function(email) {
   `;
 
   return pool.query(queryString, [email])
-  .then(res => {
-    if (res.rows.length === 1) {
-      return res.rows[0];
-    } else {
-      return null;
-    }
-  }); 
+    .then(res => {
+      if (res.rows.length === 1) {
+        return res.rows[0];
+      } else {
+        return null;
+      }
+    });
 }
 exports.getUserWithEmail = getUserWithEmail;
 
@@ -48,20 +50,20 @@ exports.getUserWithEmail = getUserWithEmail;
  * @param {string} id The id of the user.
  * @return {Promise<{}>} A promise to the user.
  */
-const getUserWithId = function(id) {
+const getUserWithId = function (id) {
   const queryString = `
   SELECT * FROM users
   WHERE id = $1;
   `;
 
   return pool.query(queryString, [id])
-  .then(res => {
-    if (res.rows.length === 1) {
-      return res.rows[0];
-    } else {
-      return null;
-    }
-  }); 
+    .then(res => {
+      if (res.rows.length === 1) {
+        return res.rows[0];
+      } else {
+        return null;
+      }
+    });
 }
 exports.getUserWithId = getUserWithId;
 
@@ -71,7 +73,7 @@ exports.getUserWithId = getUserWithId;
  * @param {{name: string, password: string, email: string}} user
  * @return {Promise<{}>} A promise to the user.
  */
-const addUser =  function(user) {
+const addUser = function (user) {
   const queryString = `
   INSERT INTO users (name, email, password)
   VALUES ($1, $2, $3)
@@ -79,12 +81,12 @@ const addUser =  function(user) {
   `;
 
   return pool.query(queryString, [user.name, user.email, user.password])
-  .then(res => {
-    return res.rows[0];
-  })
-  .catch(err => {
-    return err;
-  })
+    .then(res => {
+      return res.rows[0];
+    })
+    .catch(err => {
+      return err;
+    })
 }
 exports.addUser = addUser;
 
@@ -95,8 +97,26 @@ exports.addUser = addUser;
  * @param {string} guest_id The id of the user.
  * @return {Promise<[{}]>} A promise to the reservations.
  */
-const getAllReservations = function(guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+const getAllReservations = function (guest_id, limit = 10) {
+  const queryString = `
+  SELECT properties.*, reservations.*, avg(property_reviews.rating)
+  FROM reservations
+  JOIN properties ON reservations.property_id = properties.id
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  AND reservations.end_date < now()::date
+  GROUP BY properties.id, reservations.id
+  ORDER BY reservations.start_date
+  LIMIT $2;
+  `;
+
+  return pool.query(queryString, [guest_id, limit])
+  .then(res => {
+    return res.rows;
+  })
+  .catch(err => {
+    return err;
+  })
 }
 exports.getAllReservations = getAllReservations;
 
@@ -108,12 +128,12 @@ exports.getAllReservations = getAllReservations;
  * @param {*} limit The number of results to return.
  * @return {Promise<[{}]>}  A promise to the properties.
  */
-const getAllProperties = function(options, limit = 10) {
+const getAllProperties = function (options, limit = 10) {
   return pool.query(`
   SELECT * FROM properties
   LIMIT $1;
   `, [limit])
-  .then(res => res.rows);
+    .then(res => res.rows);
 }
 exports.getAllProperties = getAllProperties;
 
@@ -123,7 +143,7 @@ exports.getAllProperties = getAllProperties;
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
-const addProperty = function(property) {
+const addProperty = function (property) {
   const propertyId = Object.keys(properties).length + 1;
   property.id = propertyId;
   properties[propertyId] = property;
